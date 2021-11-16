@@ -51,10 +51,10 @@ public class TransferLockService implements ILockService {
                 uuid, TRANSFER_LOCK_EXPIRE_TIME);
 
         if (result == 1) {
-            System.out.println(String.format("[%s]——迁移锁申请成功, key: [%s}], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
+            System.out.println(String.format("[%s]——迁移锁申请成功, key: [%s], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
             return true;
         } else {
-            System.out.println(String.format("[%s]——迁移锁申请失败, key: [%s}], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
+            System.out.println(String.format("[%s]——迁移锁申请失败, key: [%s], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
             return false;
         }
     }
@@ -71,21 +71,44 @@ public class TransferLockService implements ILockService {
                 uuid);
 
         if (result == 1) {
-            System.out.println(String.format("[%s]——迁移锁删除成功, key: [%s}], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
+            System.out.println(String.format("[%s]——迁移锁删除成功, key: [%s], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
             return true;
         } else {
-            System.out.println(String.format("[%s]——迁移锁删除失败, key: [%s}], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
+            System.out.println(String.format("[%s]——迁移锁删除失败, key: [%s], uuid: [%s]",Thread.currentThread().getName(), key, uuid));
             return false;
         }
     }
 
+    /**
+     * 对多个key同时加锁
+     * @param keys
+     * @param uuid
+     * @return
+     */
     @Override
-    public Boolean tryLockList(List<String> keys, String value) {
-        return null;
+    public Boolean tryLockList(List<String> keys, String uuid) {
+        int num = 0;
+        try {
+            for (String key : keys) {
+                boolean res = this.tryLock(key, uuid);
+                num++;
+                if (!res) {
+                    break;
+                }
+            }
+        } finally {
+            //如果存在加锁失败的情况,就把已加过的锁释放
+            if (num != keys.size()) {
+                for (int i = 0; i < num; i++) {
+                    this.unLock(keys.get(i), uuid);
+                }
+            }
+        }
+        return num == keys.size();
     }
 
     @Override
-    public Boolean unLockList(List<String> keys, String value) {
+    public Boolean unLockList(List<String> keys, String uuid) {
         return null;
     }
 
