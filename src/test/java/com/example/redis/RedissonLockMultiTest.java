@@ -1,21 +1,22 @@
 package com.example.redis;
 
-import com.example.redis.redisson.RedissonLockService;
+import com.example.redis.redisson.impl.BusinessLockService;
+import com.example.redis.redisson.impl.TransferLockService;
 import org.junit.Test;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
 
 import java.util.Random;
 import java.util.concurrent.*;
 
-public class RedissonLockMultiTest extends BaseTestCase {
+public class RedissonLockMultiTest extends AbstractJUnit4SpringContextTests {
 
     @Autowired
-    private RedissonLockService redissonLockService;
+    private BusinessLockService businessLockService;
     @Autowired
-    private RedissonClient redissonClient;
+    private TransferLockService transferLockService;
 
-    ExecutorService threadPool = new ThreadPoolExecutor(20, 20, 0L,
+    ExecutorService threadPool = new ThreadPoolExecutor(50, 50, 0L,
             TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
 
     @Test
@@ -30,7 +31,7 @@ public class RedissonLockMultiTest extends BaseTestCase {
                     //模拟加迁移锁
                     Boolean lockFlag = false;
                     try {
-                        if (lockFlag = redissonLockService.tryWriteLock(key)) {
+                        if (lockFlag = transferLockService.tryLock(key)) {
                             //睡眠1s到2s 占用一会迁移锁
                             Thread.sleep(new Random().nextInt(1000) + 1000);
                         }
@@ -38,14 +39,14 @@ public class RedissonLockMultiTest extends BaseTestCase {
                         e.printStackTrace();
                     } finally {
                         if (lockFlag) {
-                            redissonLockService.unWriteLock(key);
+                            transferLockService.unLock(key);
                         }
                     }
                 } else {
                     //模拟加交易锁
                     Boolean lockFlag = false;
                     try {
-                        if (lockFlag = redissonLockService.tryReadLock((key))) {
+                        if (lockFlag = businessLockService.tryLock((key))) {
                             //睡眠1s之内 占用一会交易锁
                             Thread.sleep(new Random().nextInt(1000));
                         }
@@ -53,7 +54,7 @@ public class RedissonLockMultiTest extends BaseTestCase {
                         e.printStackTrace();
                     } finally {
                         if (lockFlag) {
-                            redissonLockService.unReadLock(key);
+                            businessLockService.unLock(key);
                         }
                     }
                 }

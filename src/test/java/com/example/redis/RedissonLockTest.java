@@ -1,9 +1,11 @@
 package com.example.redis;
 
-import com.example.redis.redisson.RedissonLockService;
+import com.example.redis.redisson.impl.BusinessLockService;
+import com.example.redis.redisson.impl.TransferLockService;
 import org.junit.Test;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,10 +14,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class RedissonLockTest extends BaseTestCase {
-
+public class RedissonLockTest extends AbstractJUnit4SpringContextTests {
     @Autowired
-    private RedissonLockService redissonLockService;
+    private BusinessLockService businessLockService;
+    @Autowired
+    private TransferLockService transferLockService;
     @Autowired
     private RedissonClient redissonClient;
 
@@ -34,10 +37,8 @@ public class RedissonLockTest extends BaseTestCase {
         keys.add(key1);
         keys.add(key2);
         keys.add(key3);
-        redissonLockService.tryMultiLock(keys);
-
-
-        redissonClient.getLock(key1).tryLock();
+        businessLockService.tryMultiLock(keys);
+        transferLockService.tryMultiLock(keys);
 
         Thread.sleep(3000L);
         System.out.println("======3s later ======");
@@ -45,7 +46,7 @@ public class RedissonLockTest extends BaseTestCase {
 
         threadPool.execute(()->{
             try {
-                redissonLockService.tryReadLock(key2);
+                businessLockService.tryLock(key2);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -53,7 +54,7 @@ public class RedissonLockTest extends BaseTestCase {
 
         threadPool.execute(()->{
             try {
-                redissonLockService.tryWriteLock(key3);
+                transferLockService.tryLock(key3);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
