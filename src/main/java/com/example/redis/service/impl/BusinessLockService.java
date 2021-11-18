@@ -17,6 +17,7 @@ import java.util.List;
  * 交易锁服务
  */
 @Service
+@Deprecated
 public class BusinessLockService implements ILockService {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;

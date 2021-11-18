@@ -22,7 +22,7 @@ public class RedissonLockService {
     //迁移锁过期时间 单位ms
     public final static Long TRANSFER_LOCK_EXPIRE_TIME = 60L * 1000L;
     //交易锁过期时间 单位ms
-    public final static Long BUSINESS_LOCK_EXPIRE_TIME = 1L * 1000L;
+    public final static Long BUSINESS_LOCK_EXPIRE_TIME = 60L * 1000L;
 
     @Autowired
     private RedissonClient redissonClient;
@@ -57,17 +57,15 @@ public class RedissonLockService {
 
     //联锁 todo
     public Boolean tryMultiLock(List<String> keys) throws InterruptedException {
-        List<RLock> locks = new ArrayList<>();
-        for (String key : keys) {
-            locks.add(redissonClient.getLock(this.extendTransferKey(key)));
+        RLock[] locks = new RLock[keys.size()];
+        for (int i = 0; i < keys.size(); i++) {
+            locks[i] = redissonClient.getLock(this.extendTransferKey(keys.get(i)));
         }
 
-        RedissonMultiLock multiLock = new RedissonMultiLock((RLock[]) locks.toArray());
+        RedissonMultiLock multiLock = new RedissonMultiLock(locks);
         Boolean res = multiLock.tryLock(LOCK_WAIT_TIME, TRANSFER_LOCK_EXPIRE_TIME, TimeUnit.MILLISECONDS);
-
-
         System.out.printf("[%s]——联锁申请%s, keys: %s%n",
-                Thread.currentThread().getName(), res ? "成功" : "失败", Arrays.toString(locks.toArray()));
+                Thread.currentThread().getName(), res ? "成功" : "失败", Arrays.toString(keys.toArray()));
         return res;
     }
 

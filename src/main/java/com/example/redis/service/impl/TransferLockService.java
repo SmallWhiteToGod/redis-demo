@@ -16,6 +16,7 @@ import java.util.List;
  * 迁移锁服务
  */
 @Service
+@Deprecated
 public class TransferLockService implements ILockService {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;

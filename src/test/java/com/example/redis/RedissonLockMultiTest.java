@@ -20,7 +20,7 @@ public class RedissonLockMultiTest extends BaseTestCase {
 
     @Test
     public void redissonMultiTest() throws Exception {
-        int countDownNum = 1500;
+        int countDownNum = 150;
         CountDownLatch countDownLatch = new CountDownLatch(countDownNum);
         String key = "10000002";
         for (int i = 0; i < countDownNum; i++) {
