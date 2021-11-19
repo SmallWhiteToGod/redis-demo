@@ -1,63 +1,36 @@
 package com.example.redis;
 
-import com.example.redis.redisson.impl.BusinessLockService;
-import com.example.redis.redisson.impl.TransferLockService;
+import com.example.redis.redisson.LockTestDemo;
 import org.junit.Test;
 import org.redisson.api.RedissonClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+public class RedissonLockTest extends BaseTestCase {
 
-public class RedissonLockTest extends AbstractJUnit4SpringContextTests {
     @Autowired
-    private BusinessLockService businessLockService;
-    @Autowired
-    private TransferLockService transferLockService;
+    private LockTestDemo lockTestDemo;
     @Autowired
     private RedissonClient redissonClient;
 
-    ExecutorService threadPool = new ThreadPoolExecutor(20, 20, 0L,
-            TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
-
     @Test
     public void redissonLockTest() throws Exception {
-        Thread.sleep(3000L);
 
-        String key1 = "100002";
-        String key2 = "100003";
-        String key3 = "100004";
-
-        List<String> keys = new ArrayList<>();
-        keys.add(key1);
-        keys.add(key2);
-        keys.add(key3);
-        businessLockService.tryMultiLock(keys);
-        transferLockService.tryMultiLock(keys);
-
-        Thread.sleep(3000L);
-        System.out.println("======3s later ======");
+        String custUid = "1000002";
+        String[] custUids = new String[]{"1000001","1000002","1000003"};
 
 
-        threadPool.execute(()->{
-            try {
-                businessLockService.tryLock(key2);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
+        System.out.println("====================");
+        lockTestDemo.business(custUid);
+        System.out.println("====================");
+        lockTestDemo.transfer(custUid);
+        System.out.println("====================");
+        lockTestDemo.companyBusiness(custUids);
+        System.out.println("====================");
+        lockTestDemo.companyTransfer(custUids);
 
-        threadPool.execute(()->{
-            try {
-                transferLockService.tryLock(key3);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
+        redissonClient.shutdown();
+        System.out.println("Complete!");
     }
 }

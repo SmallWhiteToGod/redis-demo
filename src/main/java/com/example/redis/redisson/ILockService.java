@@ -6,8 +6,9 @@ import java.util.List;
  * 迁移锁与交易锁接口
  */
 public interface ILockService {
+
     /**
-     * 加锁(并设置过期时间)
+     * 加锁
      * @param key
      * @return
      */

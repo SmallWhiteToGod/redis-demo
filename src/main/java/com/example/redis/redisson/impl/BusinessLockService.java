@@ -7,10 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,7 +22,7 @@ public class BusinessLockService extends AbstractLock {
     private RedissonClient redissonClient;
 
     /**
-     * 加交易锁 (读锁)
+     * 加交易锁并设置过期时间 (读锁)
      * @param key
      * @return
      * @throws InterruptedException
@@ -36,8 +34,7 @@ public class BusinessLockService extends AbstractLock {
         }
         RReadWriteLock lock = redissonClient.getReadWriteLock(this.appendPrefix(key));
         Boolean res = lock.readLock().tryLock(LOCK_WAIT_TIME, BUSINESS_LOCK_EXPIRE_TIME, TimeUnit.MILLISECONDS);
-        logger.info("[{}]——交易锁申请{}, key: [{}]",
-                Thread.currentThread().getName(), res ? "成功" : "失败", key);
+        logger.info("交易锁申请{}, key: [{}]", res ? "成功" : "失败", key);
         return res;
     }
 
@@ -52,7 +49,13 @@ public class BusinessLockService extends AbstractLock {
             return;
         }
         RReadWriteLock lock = redissonClient.getReadWriteLock(this.appendPrefix(key));
-        lock.readLock().unlock();
-        logger.info("[{}]——交易锁解锁, key: [{}]", Thread.currentThread().getName(), key);
+        if (lock.readLock().isLocked() && lock.readLock().isHeldByCurrentThread()) {
+            try {
+                lock.readLock().unlock();
+                logger.info("交易锁解锁, key: [{}]", key);
+            } catch (Exception e) {
+                logger.error("交易锁解锁异常,请检查!!!, key: [{}]", key, e);
+            }
+        }
     }
 }
